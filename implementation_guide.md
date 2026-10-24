@@ -54,12 +54,13 @@ The design intentionally enforces unique idempotency keys and ensures that every
 
 ## Idempotency Strategy
 
-The system will store a unique idempotency key for every transfer request. If a client retries the same request, the handler will check the idempotency record first and immediately return the original response instead of creating a second transfer.
+The system will store a unique idempotency key for every transfer request. The handler will validate and map the request before invoking the service. The service will check the idempotency record and return the original response for a completed request instead of creating a second transfer.
 
 Implementation plan:
 
 - enforce uniqueness on transfers.idempotency_key or on a dedicated idempotency table
-- persist the stored response body for the original successful (or failed) request
+- persist the stored response body for the original successful (or failed) request in the same transaction as the transfer side effects
+- have the service perform the replay decision and conflict recovery after the database has accepted or rejected the unique idempotency claim
 - ensure that retries do not produce duplicate ledger rows or rebalance wallet funds
 - treat the idempotency key as the durable source of truth for request replay
 
